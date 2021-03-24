@@ -15,10 +15,10 @@ int COORD_LENGTH = 3;
 char ALP_CAPT[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 char ALP_LOW[] = "abcdefghijklmnopqrstuvwxyz";
 
-int getNumOfMinesInCell( MineField mineField, int cell);
 int openView( MineField mineField, int cell);
 int getCell();
 int getColumn( char x_char );
+void increaseNumberArround(MineField mineField, int cell);
 
 void play( MineField mineField ){
 
@@ -47,14 +47,14 @@ int getCell( MineField mineField ){
 	int y = MAX_HEIGHT;
 	
 	int cell;
-	int layerAdder = mineField->width * mineField->height;
+	int layerSizeer = mineField->width * mineField->height;
 	do{
 		char coord[3];
 		scanf("%s", coord);
 		sscanf(coord, "%d%c", &y, &x_char);
 		x = getColumn(x_char);
 		cell = (y * mineField->width) + x; 
-	}while( *(mineField->field + cell + layerAdder)== 1 );
+	}while( *(mineField->field + cell + layerSizeer)== 1 );
 	return cell;
 }
 
@@ -97,83 +97,79 @@ void clearField( MineField mineField ){
 }
 
 void fillField(MineField mineField, int startedCell){
-	// startedCell: cell clicked initialy by the player
+// startedCell: cell clicked initialy by the player
 
+	int layerSize = (mineField->width * mineField->height);
 	srand(time(NULL));
-	
-	int layerAdd = (mineField->width * mineField->height);
 
+	// filing with 0s
+	for( int cell=0; cell < layerSize*2; cell++ ){ *(mineField->field + cell) = 0; }
+	
 	// Filling layer 0 (putting the mines)
 	mineField->numberOfMines = 0;
-	for(int cell=0; cell < layerAdd; cell++){
+	for(int cell=0; cell < layerSize; cell++){
 		int randNumber = rand()%101;
 		if( randNumber <= mineField->mineChance && cell != startedCell ){
 			*(mineField->field + cell) = -1;
+			increaseNumberArround(mineField, cell);
 			mineField->numberOfMines++;
-		}else{ *(mineField->field + cell) = 0; }
-
-		*(mineField->field + cell + layerAdd) = 0;
-	}
-
-	// Filling layer 1 (putting the numbers)
-	for(int cell=0; cell < layerAdd; cell++){
-		if( *(mineField->field + cell) == 0 )
-			*(mineField->field + cell) = getNumOfMinesInCell( mineField, cell );
+		}
+		*(mineField->field + cell + layerSize) = 0;
 	}
 
 	openView( mineField, startedCell);
 }
 
-int getNumOfMinesInCell( MineField mineField, int cell){
+void increaseNumberArround(MineField mineField, int cell){
+	
+	int layerSize = mineField->width * mineField->height;
+	int rowSize = mineField->width;
 
-	int numOfMines = 0;
-	int vertAdders[] = { -mineField->width, 0, mineField->width }; // vertical adder
-	int layerAdd = mineField->width * mineField->height;
-
-	for( int vert = 0; vert < 3; vert++){
-		int verfCell = cell + vertAdders[ vert ];
-		if(verfCell >= 0 && verfCell < layerAdd ){
-			for( int horiz = -1; horiz <= 1; horiz++){ // horizontal adder
-				if( (verfCell%mineField->width)+horiz >= 0 && (verfCell%mineField->width)+horiz < mineField->width ){
-					if( *(mineField->field + verfCell + horiz) == -1 )
-						numOfMines++;
+	for(int row = -1; row <= 1; row++){
+		int neighborCell = cell + (row * rowSize);
+		if( neighborCell >= 0 && neighborCell < layerSize ){
+		// row is inside the layer
+			for(int col = -1; col <= 1; col++){
+				if( (neighborCell%rowSize)+col >= 0 && (neighborCell%rowSize)+col < rowSize ){
+				// col is inside the range
+					if( *(mineField->field + neighborCell + col) != -1 ){
+						*(mineField->field + neighborCell + col) += 1;
+					}
 				}
-			}
-		}
-	}
-	// IDEIA: AO INVES DE CONTAR O NUMERO DE BOMBAS AO REDOR DE CADA CÉLULA, PERCORRER TODAS AS CELULAR COM MINAS E INCREMENTAR 1 EM TODAS AS CELULAR AO REDOR DE CADA UMA
-	return numOfMines;
+			} // col
+		} 
+	} // row
 }
 
 int openView( MineField mineField, int cell){
 	
-	int layerAdd = mineField->width * mineField->height;
+	int layerSize = mineField->width * mineField->height;
 	if( *(mineField->field + cell) == -1 ){
-		*(mineField->field + cell + layerAdd) = 1;
+		*(mineField->field + cell + layerSize) = 1;
 		return -1;
 	}
 
 	int vertAdders[] = { -mineField->width, 0, mineField->width }; // vertical adder
 	
 	int cellValue = *(mineField->field + cell);
-	if(	*(mineField->field + cell + layerAdd) == 0){
-		*(mineField->field + cell + layerAdd) = 1;
+	if(	*(mineField->field + cell + layerSize) == 0){
+		*(mineField->field + cell + layerSize) = 1;
 		mineField->revealedEmptyCells += 1;
 	}
 
 	for( int vert = 0; vert < 3; vert++){ // vertical iteration
 		int verfCell = cell + vertAdders[ vert ];
-		if(verfCell >= 0 || verfCell < layerAdd ){ // if is not beyond the vertical scope
+		if(verfCell >= 0 || verfCell < layerSize ){ // if is not beyond the vertical scope
 			for( int horiz = -1; horiz <= 1; horiz++){ // horizontal iteration
 				if( (verfCell%mineField->width)+horiz >= 0 && (verfCell%mineField->width)+horiz < mineField->width ){ // if is not beyond the horizontal scope
 
 					if( cellValue == 0 ){
-						if( *(mineField->field + verfCell + horiz) > 0 && *(mineField->field + verfCell + horiz + layerAdd) == 0 ){ // 
-							*(mineField->field + verfCell + horiz + layerAdd) = 1;
+						if( *(mineField->field + verfCell + horiz) > 0 && *(mineField->field + verfCell + horiz + layerSize) == 0 ){ // 
+							*(mineField->field + verfCell + horiz + layerSize) = 1;
 							mineField->revealedEmptyCells += 1;
 						}
 					}
-					if( *(mineField->field + verfCell + horiz) == 0 && *(mineField->field + verfCell + horiz + layerAdd) == 0)
+					if( *(mineField->field + verfCell + horiz) == 0 && *(mineField->field + verfCell + horiz + layerSize) == 0)
 						openView( mineField, verfCell+horiz );
 						
 				}
@@ -191,11 +187,11 @@ void showField( MineField mineField ){
 	for(int col = 0; col < mineField->width; col++)
 		printf("%c ", ALP_CAPT[col]);
 
-	int layerAdd = mineField->width * mineField->height;
-	for(int cell = 0; cell < layerAdd; cell++){
+	int layerSize = mineField->width * mineField->height;
+	for(int cell = 0; cell < layerSize; cell++){
 		if( cell % mineField->width == 0 )
 			printf("\n%3d | ", (cell)/mineField->width);
-		int showCell = *(mineField->field + cell + layerAdd );
+		int showCell = *(mineField->field + cell + layerSize );
 
 		if( showCell == 1 ){
 			char c;
@@ -214,11 +210,11 @@ void showField( MineField mineField ){
 
 void showLayer( MineField mineField, int layer){
 	
-	printf("Field | %d Mines | %dx%d\n", mineField->numberOfMines, mineField->width, mineField->height);
+	printf("\nField | %d Mines | %dx%d\n", mineField->numberOfMines, mineField->width, mineField->height);
 
-	int layerAdd = mineField->width * mineField->height;
-	for(int cell = 0; cell < layerAdd; cell++){	
-		int valueCell = *(mineField->field + cell + layer*layerAdd );
+	int layerSize = mineField->width * mineField->height;
+	for(int cell = 0; cell < layerSize; cell++){	
+		int valueCell = *(mineField->field + cell + layer*layerSize );
 		if( valueCell == -1 ){
 			printf("@ ");
 		}
