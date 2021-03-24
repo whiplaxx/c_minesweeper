@@ -5,12 +5,11 @@
 int main(){
 
 	MineField mineField = createField();
-	changeSettings( mineField, 5, 5, 15);
+	changeSettings( mineField, 14, 18, 15);
 	
-	fillField(mineField, 13);
-	showLayer(mineField, 0);
+	//fillField(mineField, 13);
 
-	//play( mineField );
+	play( mineField );
 
 	clearField(mineField);
 

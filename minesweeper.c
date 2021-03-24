@@ -38,8 +38,10 @@ void play( MineField mineField ){
 	}
 	showField( mineField );
 
-	if( mineField->status == -1){ printf("You lose!\n"); }
-	else{ printf("You won!\n"); }
+	if( mineField->status == -1){ printf("\n### You lose! ###\n"); }
+	else{ printf("\n### You won! ###\n"); }
+
+	showLayer(mineField, 0);
 }
 
 int getCell( MineField mineField ){
